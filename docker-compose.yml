@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    user: root
+    volumes:
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.15.2
+    user: root
+    command: -f /etc/logstash/conf.d/
+    volumes:
+      - ./logstash/:/etc/logstash/conf.d/
+    ports:
+      - "5000:5000"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    depends_on:
+      - elasticsearch
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.2
+    user: root
+    volumes:
+      - ./kibana/:/usr/share/kibana/config/
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    entrypoint: ["./bin/kibana", "--allow-root"]
+  spring-elk-example:
+    image: tugayesilyurt/spring-elk-example
+    container_name: spring-elk-example
+    build: 
+       context: ./spring-elk-example
+       dockerfile: Dockerfile
+    depends_on:
+      - logstash
+    restart: on-failure
+    ports:
+      - "3000:3000"  
